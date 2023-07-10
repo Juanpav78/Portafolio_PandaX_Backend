@@ -1,0 +1,37 @@
+{
+  "name": "portafolio_pandax_backend",
+  "version": "1.0.0",
+  "description": "Backend del portafolio web Pandax MERN ",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Juanpav78/Portafolio_PandaX_Backend.git"
+  },
+  "keywords": [
+    "MERN",
+    "Express",
+    "Node",
+    "JS"
+  ],
+  "author": "Juan Alvarado // Pandax",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Juanpav78/Portafolio_PandaX_Backend/issues"
+  },
+  "homepage": "https://github.com/Juanpav78/Portafolio_PandaX_Backend#readme",
+  "devDependencies": {
+    "mongoose": "^7.3.2",
+    "nodemon": "^2.0.22"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.1"
+  }
+}
