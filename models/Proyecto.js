@@ -11,6 +11,10 @@ const proyectoSchema = mongoose.Schema({
         required:true,
         trim:true
     },
+    github:{
+        type:String,
+        trim:true
+    },
     descripcion:{
         type:String,
         required:true,
@@ -31,12 +35,15 @@ const proyectoSchema = mongoose.Schema({
         required:true,
         trim:true,
     },
-    token:{
-        type:String,
-    },
+    fechaEntrega:{
+        type:Date,
+        default:Date.now(),
+    }
 
 },{
     timestamps: true,
 });
 
 const Proyecto = mongoose.model("Proyecto", proyectoSchema);
+
+export default Proyecto;
