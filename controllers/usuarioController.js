@@ -2,10 +2,6 @@ import generateId from "../helpers/generateId.js";
 import generateJWT from "../helpers/generateJWT.js";
 import Usuario from "../models/Usuario.js"
 
-const usuarios = (req, res)=>{
-    res.json({msg: "desde api/usuarios"})
-};
-
 const createUsuario =  async (req, res)=>{
     const {email} =req.body;
     const isUser = await Usuario.findOne({email});
@@ -99,17 +95,46 @@ const confirmToken = async (req, res)=>{
     const isToken = await Usuario.findOne({token});
 
     if(isToken){
-
+        res.json({msg: "Token valido y el usuario existe"})
     }else{
-        
+        const error = new Error("token no valido");
+        return res.status(404).json({msg:error.message});
     }
 }
 
+const newPassword = async (req, res)=>{
+    const {token} = req.params;
+    const {password} = req.body;
+    const isToken = await Usuario.findOne({token});
+
+    if(isToken){
+        isToken.password = password;
+        isToken.token = "";
+        try {
+            await isToken.save()
+            res.json({msg: "Password cambiado de forma exitosa"})
+        } catch (error) {
+            console.log(error)
+        }
+        
+    }else{
+        const error = new Error("usuario no valido");
+        return res.status(404).json({msg:error.message});
+    }
+}
+
+const getPerfil = (req, res)=>{
+    const {usuario} = req;
+    res.json(usuario)
+};
+
+
 export{
-    usuarios,
     createUsuario,
     authUsuario,
     confirmUsuario,
     resetPassword,
-    confirmToken
+    confirmToken,
+    newPassword,
+    getPerfil
 };
