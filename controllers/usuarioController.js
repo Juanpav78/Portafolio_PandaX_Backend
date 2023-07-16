@@ -32,7 +32,7 @@ const createUsuario =  async (req, res)=>{
 };
 
 const authUsuario =  async (req, res)=>{
-     const {email} =req.body;
+     const {email, password} =req.body;
 
     //comprobar si el usuario existe
     const usuario = await Usuario.findOne({email});
@@ -46,7 +46,7 @@ const authUsuario =  async (req, res)=>{
         return res.status(403).json({msg:error.message});
     }
     //comprobar password
-   if (await usuario.comprobarPassword){
+   if (await usuario.comprobarPassword(password)){
         res.json({
             _id     :  usuario._id,
             nombre  :  usuario.nombre,

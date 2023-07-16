@@ -4,9 +4,19 @@ import conectarDB from "./config/db.js";
 import usuarioRouter from "./routes/usuarioRoutes.js";
 import proyectoRouter from "./routes/proyectoRoutes.js";
 import cors from "cors"
+import fileupload from "express-fileupload";
 
 const app = express();
 
+
+app.use(
+    fileupload({
+        useTempFiles: true,
+        tempFileDir: '/tmp/',
+        createParentPath: true,
+    }),
+);
+  
 dotenv.config();
 app.use(express.json());
 const PORT = process.env.PORT || 4000;
@@ -18,8 +28,8 @@ const whiteList = [process.env.FRONTEND_URL
 ]
 
 const corsOptions = {
+
     origin: function(origin, callback){
-        console.log(origin)
         if(whiteList.includes(origin)){
             // puede consultar la api
             callback(null, true)
