@@ -37,6 +37,7 @@ const createProyecto = async (req, res)=>{
 }
 const updateProyecto = async (req, res)=>{
     const {id} = req.params;
+    let imagen = ""
 
     try {
         const proyecto = await Proyecto.findById(id);
@@ -46,23 +47,30 @@ const updateProyecto = async (req, res)=>{
             return res.status(404).json({msg: error.message});
         }
 
+
+
+        if(req.files != null){  
+            //Se elimina de cloudinary la imagen anterior
+            await cloudDelete(proyecto.imagen)
+            //Se elimina de cloudinary se sube una nueva imagen
+            const file = req.files.imagen
+            imagen = await cloudUpload(file);
+        }else{
+            imagen = proyecto.imagen
+        }
+        
         proyecto.nombre       = req.body.nombre         || proyecto.nombre;
         proyecto.descripcion  = req.body.descripcion    || proyecto.descripcion;
-        proyecto.imagen       = req.body.imagen         || proyecto.imagen;
+        proyecto.imagen = imagen;
         proyecto.link         = req.body.link           || proyecto.link;
         proyecto.github       = req.body.github         || proyecto.github;
         proyecto.tipo         = req.body.tipo           || proyecto.tipo;
         proyecto.tecnologias  = req.body.tecnologias    || proyecto.tecnologias;
         proyecto.fechaEntrega = req.body.fechaEntrega   || proyecto.fechaEntrega;
 
-        try {
-            const proyectoSave = await proyecto.save();
-            res.json(proyectoSave);
-        } catch (error) {
-            const errors = new Error("Algo salio mal");
-            return res.status(404).json({msg: errors.message});
-        }
         
+        const proyectoSave = await proyecto.save();
+        res.json(proyectoSave);
         
     } catch (error) {
         const errors = new Error("Id no valido");
@@ -111,10 +119,25 @@ const cloudUpload =async(file)=>{
             folder: 'images', // Asignamos la carpeta de destino
         });
 
-        // Extraemos la url pública del archivo en cloudinary
-        const { secure_url } = uploaded;
-            // Devolvemos una respuesta con la url del archivo
-        return secure_url;
+
+        // Devolvemos una respuesta con la objecto del archivo
+        return uploaded;
+    } catch (error) {
+        console.log(error)
+    }
+
+}
+
+const cloudDelete = async(image)=>{
+    try {
+         cloudinary.config({ 
+            cloud_name: process.env.CLOUD_NAME, 
+            api_key: process.env.CLOUD_KEY, 
+            api_secret: process.env.CLOUD_SECRET,
+            secure: true
+          });
+
+          cloudinary.uploader.destroy(image.public_id , image.resource_type)
     } catch (error) {
         console.log(error)
     }

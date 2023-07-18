@@ -31,8 +31,7 @@ const proyectoSchema = mongoose.Schema({
         trim:true,
     },
     imagen:{
-        type:String,
-        required:true,
+        type:Object,
         trim:true,
     },
     fechaEntrega:{
