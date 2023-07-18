@@ -88,7 +88,8 @@ const deleteProyecto = async (req, res)=>{
             const error = new Error("No encontrado");
             return res.status(404).json({msg: error.message});
         }
-
+        //Se elimina de cloudinary la imagen anterior
+        await cloudDelete(proyecto.imagen)
         try {
             await proyecto.deleteOne();
             res.json({msg: "Proyecto Eliminado"});
