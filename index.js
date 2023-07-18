@@ -30,8 +30,7 @@ const whiteList = [process.env.FRONTEND_URL
 const corsOptions = {
 
     origin: function(origin, callback){
-        console.log(origin)
-        console.log(process.env.FRONTEND_URL)
+
         if(whiteList.includes(origin)){
             // puede consultar la api
             callback(null, true)
