@@ -29,7 +29,11 @@ const whiteList = [process.env.FRONTEND_URL
 
 const corsOptions = {
 
-    origin: function(origin, callback){
+    origin: '*', // Permite cualquier origen
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
+    allowedHeaders: ['Content-Type', 'Authorization'], // Headers permitidos
+    
+    /* function(origin, callback){
 
         if(whiteList.includes(origin)){
             // puede consultar la api
@@ -38,7 +42,7 @@ const corsOptions = {
             // no puede consultar la api
             callback(new Error("Error de cors"))
         }
-    }
+    } */
 }
 
 app.use(cors(corsOptions));
