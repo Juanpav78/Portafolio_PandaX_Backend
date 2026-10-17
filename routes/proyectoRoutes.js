@@ -4,7 +4,9 @@ import {getProyectos,
     getProyecto,
     createProyecto,
     updateProyecto,
-    deleteProyecto} from "../controllers/proyectoController.js"
+    deleteProyecto,
+    destacarProyecto,
+    ordenarDestacados} from "../controllers/proyectoController.js"
 
 const router = express.Router();
 
@@ -12,10 +14,14 @@ router.route('/')
         .get(getProyectos)
         .post(checkAuth, createProyecto)
 
+// Debe ir antes de '/:id': si no, Express tomaría "orden" como si fuera el id de un proyecto
+router.put('/orden', checkAuth, ordenarDestacados)
+
 router.route('/:id')
         .get(checkAuth, getProyecto)
         .put(checkAuth, updateProyecto)
         .delete(checkAuth, deleteProyecto);
 
+router.patch('/:id/destacado', checkAuth, destacarProyecto)
 
 export default router;

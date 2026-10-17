@@ -4,7 +4,14 @@ import Usuario from "../models/Usuario.js"
 import { confirmarUsuario, recuperarPassword} from "../helpers/email.js"
 
 const createUsuario =  async (req, res)=>{
-    const {email} =req.body;
+    // El panel es de un solo administrador: cualquier cuenta confirmada puede editar y borrar
+    // proyectos, así que el registro queda cerrado salvo que se active a propósito en el .env
+    // (p. ej. para recrear la cuenta si se pierde el acceso).
+    if(process.env.REGISTRO_ABIERTO !== 'true'){
+        return res.status(403).json({msg: "El registro de nuevas cuentas está cerrado"});
+    }
+
+    const {nombre, email, password} = req.body;
     const isUser = await Usuario.findOne({email});
 
     if(isUser){
@@ -12,21 +19,22 @@ const createUsuario =  async (req, res)=>{
         return res.status(400).json({msg:error.message});
     }
     try {
-        const usuario = new Usuario(req.body);
+        // Sólo se toman los campos esperados: pasar req.body completo permitiría enviar
+        // { confirmado: true } y saltarse la verificación por email.
+        const usuario = new Usuario({nombre, email, password});
         usuario.token = generateId();
         await usuario.save();
 
-        confirmarUsuario({
+        await confirmarUsuario({
             email: usuario.email,
             nombre: usuario.nombre,
             token: usuario.token
-
         })
 
         res.json({msg: "Usuario creado correctamente, revisa tu email para confirmarla"})
     } catch (error) {
         console.log(error);
-        res.json({msg: "error"})
+        res.status(500).json({msg: "No se pudo crear la cuenta"})
     }
    
 };
@@ -92,17 +100,18 @@ const resetPassword = async (req, res)=>{
     try {
         usuario.token = generateId();
         await usuario.save();
-        //enviar email
-        recuperarPassword({
+        // Se espera al envío: sin await, un fallo del SMTP quedaba como promesa rechazada sin
+        // manejar (que en Node tumba el proceso) y además se respondía "enviado" sin serlo.
+        await recuperarPassword({
             email: usuario.email,
             nombre: usuario.nombre,
             token: usuario.token
-
         })
 
         res.json({msg:"Se ha enviado un email para restablecer el password"})
     } catch (error) {
         console.log(error);
+        res.status(500).json({msg: "No se pudo enviar el correo, inténtalo más tarde"})
     }
    
 };

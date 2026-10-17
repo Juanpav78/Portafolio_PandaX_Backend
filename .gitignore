@@ -12,3 +12,5 @@ node_modules
 
 # Ignora archivos de configuración SASS
 .sass-cache
+# Permite subir la plantilla de variables
+!.env.example
