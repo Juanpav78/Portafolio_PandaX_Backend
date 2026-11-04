@@ -1,4 +1,5 @@
 import Proyecto from "../models/Proyecto.js";
+import { filtroProyectos } from "../helpers/publico.js";
 import { v2 as cloudinary } from 'cloudinary'
 import { cloudinaryConfig } from "../config/env.js";
 
@@ -57,8 +58,13 @@ const responderError = (res, error) => {
 }
 
 const getProyectos = async (req, res)=>{
+    // El admin pide ?todos=true y ve también lo oculto y lo de PandaX Code. Se exige el parámetro
+    // además del token porque el admin comparte dominio (y token guardado) con el portafolio:
+    // sin él, al visitar la web pública con la sesión abierta verías proyectos ocultos.
+    const todos = req.esAdmin && req.query.todos === 'true'
+    const filtro = todos ? {} : filtroProyectos(req.query.site || 'portafolio')
     // Primero los destacados en su orden manual y después el resto, del más reciente al más antiguo
-    const proyectos = await Proyecto.find().sort({ destacado: -1, orden: 1, fechaEntrega: -1 });
+    const proyectos = await Proyecto.find(filtro).sort({ destacado: -1, orden: 1, fechaEntrega: -1 });
     res.json({proyectos});
 }
 
