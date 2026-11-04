@@ -88,26 +88,26 @@ export const eliminarMensaje = async (req, res) => {
 }
 
 // ---------- Resumen del panel ----------
-// Conteos por sitio de cada contenido. Un documento en ambos sitios cuenta en los dos.
-const contarPorSitio = Model => Promise.all(SITIOS.map(sitio => Model.countDocuments({ sitios: sitio })))
-    .then(conteos => Object.fromEntries(SITIOS.map((sitio, i) => [sitio, conteos[i]])))
+// Conteos por sitio de cada contenido más el total real (un documento en ambos sitios cuenta
+// una vez en el total y una vez en cada sitio).
+const contarPorSitio = Model => Promise.all([Model.countDocuments(), ...SITIOS.map(sitio => Model.countDocuments({ sitios: sitio }))])
+    .then(([total, ...conteos]) => ({ total, ...Object.fromEntries(SITIOS.map((sitio, i) => [sitio, conteos[i]])) }))
 
 export const resumen = async (req, res) => {
     try {
-        const [nuevos, nuevosPorSitio, proyectos, servicios, testimonios, totalProyectos, ultimos] = await Promise.all([
+        const [nuevos, nuevosPorSitio, proyectos, servicios, testimonios, ultimos] = await Promise.all([
             Message.countDocuments({ estado: 'nuevo' }),
             Promise.all(SITIOS.map(site => Message.countDocuments({ estado: 'nuevo', site })))
                 .then(conteos => Object.fromEntries(SITIOS.map((sitio, i) => [sitio, conteos[i]]))),
             contarPorSitio(Proyecto),
             contarPorSitio(Service),
             contarPorSitio(Testimonial),
-            Proyecto.countDocuments(),
             Message.find({ estado: { $ne: 'archivado' } }).sort({ createdAt: -1 }).limit(5).lean(),
         ])
         res.json({
             mensajesNuevos: nuevos,
             mensajesNuevosPorSitio: nuevosPorSitio,
-            proyectos: { total: totalProyectos, ...proyectos },
+            proyectos,
             servicios,
             testimonios,
             ultimosMensajes: ultimos,
