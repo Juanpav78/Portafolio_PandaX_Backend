@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { autoSlug, campoSitios } from "../helpers/sitios.js";
 
 const proyectoSchema = mongoose.Schema({
     nombre:{
@@ -6,10 +7,19 @@ const proyectoSchema = mongoose.Schema({
         required:true,
         trim:true
     },
+    // Identificador legible para la URL de PandaX Code (/projects/:slug). Se genera del nombre
+    // si no se escribe. sparse: los proyectos anteriores a este campo no lo tienen todavía.
+    slug:{
+        type:String,
+        trim:true,
+        unique:true,
+        sparse:true,
+    },
+    // Ya no es obligatorio: un proyecto de cliente de PandaX Code puede no tener demo pública
     link:{
         type:String,
-        required:true,
-        trim:true
+        trim:true,
+        default:'',
     },
     github:{
         type:String,
@@ -80,11 +90,36 @@ const proyectoSchema = mongoose.Schema({
     fechaEntrega:{
         type:Date,
         default:Date.now,
-    }
+    },
+    // Campos que muestra PandaX Code en la tarjeta y el modal del proyecto
+    subtitulo:{
+        type:String,
+        trim:true,
+        default:'',
+    },
+    resumen:{
+        type:String,
+        trim:true,
+        default:'',
+    },
+    // Etiquetas cortas tipo "Responsive", "SEO optimizado" (highlights en PandaX Code)
+    puntosClave:{
+        type:[String],
+        default:[],
+    },
+    // En qué webs aparece. Los proyectos que ya existían eran del portafolio.
+    sitios: campoSitios(['portafolio']),
+    // Permite ocultar un proyecto de las webs públicas sin borrarlo
+    publicado:{
+        type:Boolean,
+        default:true,
+    },
 
 },{
     timestamps: true,
 });
+
+autoSlug(proyectoSchema, 'nombre')
 
 const Proyecto = mongoose.model("Proyecto", proyectoSchema);
 

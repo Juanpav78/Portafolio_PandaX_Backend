@@ -1,0 +1,70 @@
+### Peticiones de prueba de la API (extensión REST Client de VS Code: "Send Request").
+### Arranca la API con `npm run dev` y, para las rutas del admin, pega el token del login en @token.
+
+@api = http://localhost:4000/api
+@token = pega-aqui-el-token
+
+### ---------- Públicas (PandaX Code / portafolio) ----------
+
+GET {{api}}/services?site=code
+
+###
+GET {{api}}/projects?site=code&featured=true&limit=3
+
+###
+GET {{api}}/projects/vibes
+
+###
+GET {{api}}/testimonials?site=code
+
+###
+GET {{api}}/projects?site=portafolio
+
+###
+POST {{api}}/contact
+Content-Type: application/json
+
+{
+  "name": "Prueba",
+  "email": "prueba@example.com",
+  "phone": "3001234567",
+  "company": "Empresa de prueba",
+  "service": "Landing Pages",
+  "budget": "No lo sé aún",
+  "message": "Hola, este es un mensaje de prueba del formulario.",
+  "consent": true,
+  "site": "code"
+}
+
+### ---------- Admin ----------
+
+POST {{api}}/admin/login
+Content-Type: application/json
+
+{ "email": "tucorreo@gmail.com", "password": "tu-contraseña" }
+
+###
+GET {{api}}/admin/resumen
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/admin/messages?site=code
+Authorization: Bearer {{token}}
+
+###
+GET {{api}}/admin/projects?site=portafolio
+Authorization: Bearer {{token}}
+
+###
+POST {{api}}/admin/services
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "title": "Servicio de prueba", "description": "Descripción", "icon": "code", "priceFrom": 500000, "sitios": ["code"] }
+
+###
+POST {{api}}/admin/testimonials
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Cliente", "company": "Empresa", "role": "Gerente", "text": "Muy buen trabajo.", "sitios": ["code", "portafolio"] }

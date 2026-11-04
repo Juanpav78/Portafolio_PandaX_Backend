@@ -59,6 +59,7 @@ const authUsuario =  async (req, res)=>{
             _id     :  usuario._id,
             nombre  :  usuario.nombre,
             email   :  usuario.email,
+            rol     :  usuario.rol ?? 'admin',
             token   :  generateJWT(usuario._id),
         })
    }else{

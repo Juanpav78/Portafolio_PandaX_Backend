@@ -5,14 +5,22 @@ import usuarioRouter from "./routes/usuarioRoutes.js";
 import proyectoRouter from "./routes/proyectoRoutes.js";
 import planRouter from "./routes/planRoutes.js";
 import contactoRouter from "./routes/contactoRoutes.js";
+import publicRouter from "./routes/publicRoutes.js";
+import adminRouter from "./routes/adminRoutes.js";
 import cors from "cors"
+import helmet from "helmet";
 import fileupload from "express-fileupload";
+import { corsOrigins } from "./config/env.js";
 
 const app = express();
 
 // Render pone un proxy delante de la app: sin esto todas las peticiones parecerían venir de la
 // IP del proxy y el límite de intentos de login bloquearía a todos los visitantes a la vez.
 app.set('trust proxy', 1);
+
+// Cabeceras de seguridad estándar. La API la consumen otros dominios (portafolio y PandaX Code),
+// por eso la política de recursos se abre a cross-origin; el control de acceso real lo hace CORS.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 
 app.use(
@@ -45,11 +53,8 @@ const PORT = process.env.PORT || 4000;
 conectarDB();
 
 //Configuracion del Cors
-// FRONTEND_URL admite varios orígenes separados por coma
-const whiteList = (process.env.FRONTEND_URL || "")
-    .split(",")
-    .map(url => url.trim())
-    .filter(Boolean)
+// CORS_ORIGINS (o FRONTEND_URL) admite varios orígenes separados por coma: admin, portafolio y PandaX Code
+const whiteList = corsOrigins()
 
 const corsOptions = {
 
@@ -72,6 +77,20 @@ app.use('/api/usuarios', usuarioRouter)
 app.use('/api/proyectos', proyectoRouter)
 app.use('/api/planes', planRouter)
 app.use('/api/contacto', contactoRouter)
+// Panel de administración (protegido con JWT salvo el login)
+app.use('/api/admin', adminRouter)
+// Rutas públicas compartidas (PandaX Code y portafolio): /api/services, /api/projects…
+app.use('/api', publicRouter)
+
+// Último middleware: cualquier error no atrapado responde JSON (con `msg` para el admin y
+// `message` para PandaX Code) en vez de la página HTML por defecto de Express.
+app.use((err, req, res, next) => {
+    if (err.message === 'Error de cors') {
+        return res.status(403).json({ msg: 'Origen no permitido', message: 'Origen no permitido' })
+    }
+    console.log(err)
+    res.status(err.status || 500).json({ msg: 'Error en el servidor', message: 'Error en el servidor' })
+})
 
 app.listen(PORT , ()=>{
     console.log(`Servidor Corriendo en ${PORT}`)
