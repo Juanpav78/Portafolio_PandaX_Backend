@@ -82,6 +82,16 @@ app.use('/api/admin', adminRouter)
 // Rutas públicas compartidas (PandaX Code y portafolio): /api/services, /api/projects…
 app.use('/api', publicRouter)
 
+// Último middleware: cualquier error no atrapado responde JSON (con `msg` para el admin y
+// `message` para PandaX Code) en vez de la página HTML por defecto de Express.
+app.use((err, req, res, next) => {
+    if (err.message === 'Error de cors') {
+        return res.status(403).json({ msg: 'Origen no permitido', message: 'Origen no permitido' })
+    }
+    console.log(err)
+    res.status(err.status || 500).json({ msg: 'Error en el servidor', message: 'Error en el servidor' })
+})
+
 app.listen(PORT , ()=>{
     console.log(`Servidor Corriendo en ${PORT}`)
 });
