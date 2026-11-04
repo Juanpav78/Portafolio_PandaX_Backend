@@ -73,6 +73,11 @@ const proyectoSchema = mongoose.Schema({
     imagen:{
         type:Object,
     },
+    // Captura de cómo se ve el proyecto en el celular (opcional). PandaX Code la muestra en el
+    // mockup de celular del hero; sin ella, ese celular no puede enseñar el diseño responsive.
+    imagenMovil:{
+        type:Object,
+    },
     // Capturas adicionales, en el orden en que se muestran después de la portada
     galeria:{
         type:[Object],

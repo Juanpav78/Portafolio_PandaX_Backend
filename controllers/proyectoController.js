@@ -60,9 +60,11 @@ const createProyecto = async (req, res)=>{
     let subidas = []
     try {
         // Las subidas van en paralelo: con varias capturas, en serie tardaría la suma de todas
-        subidas = await Promise.all([portada, ...nuevas].map(subir))
-        const [imagen, ...galeria] = subidas
-        const proyecto = new Proyecto({ ...tomarTextos(req.body), imagen, galeria })
+        // La captura móvil es opcional: si no llega, su posición queda en null y no se sube nada
+        const movil = req.files?.imagenMovil
+        subidas = await Promise.all([portada, movil, ...nuevas].map(archivo => archivo ? subir(archivo) : null))
+        const [imagen, imagenMovil, ...galeria] = subidas
+        const proyecto = new Proyecto({ ...tomarTextos(req.body), imagen, galeria, ...(imagenMovil && { imagenMovil }) })
         res.json(await proyecto.save());
     } catch (error) {
         // Si falla el guardado (p. ej. validación) se limpian las imágenes ya subidas para no
@@ -88,18 +90,24 @@ const updateProyecto = async (req, res)=>{
 
         // Antes cualquier archivo adjunto reemplazaba la portada; ahora sólo el campo "imagen"
         const portadaNueva = req.files?.imagen
-        const [imagen, ...galeriaNueva] = await Promise.all(
-            [portadaNueva, ...nuevas].map(archivo => archivo ? subir(archivo) : null))
+        const movilNueva = req.files?.imagenMovil
+        const [imagen, imagenMovil, ...galeriaNueva] = await Promise.all(
+            [portadaNueva, movilNueva, ...nuevas].map(archivo => archivo ? subir(archivo) : null))
         const portadaVieja = imagen ? proyecto.imagen : null
+        // La captura móvil se reemplaza al subir otra o se quita con quitarImagenMovil=true
+        const quitarMovil = req.body.quitarImagenMovil === 'true'
+        const movilVieja = (imagenMovil || quitarMovil) ? proyecto.imagenMovil : null
 
         proyecto.set(tomarTextos(req.body))
         if (imagen) proyecto.imagen = imagen
+        if (imagenMovil) proyecto.imagenMovil = imagenMovil
+        else if (quitarMovil) proyecto.imagenMovil = undefined
         proyecto.galeria = [...restantes, ...galeriaNueva]
         const guardado = await proyecto.save();
 
         // Las imágenes viejas se borran DESPUÉS de guardar: si el guardado fallara, el proyecto
         // seguiría apuntando a ellas y no deben haber desaparecido.
-        await Promise.all([portadaVieja, ...eliminadas].map(borrar))
+        await Promise.all([portadaVieja, movilVieja, ...eliminadas].map(borrar))
         res.json(guardado);
     } catch (error) {
         responderError(res, error)
@@ -111,7 +119,7 @@ const deleteProyecto = async (req, res)=>{
         const proyecto = await Proyecto.findById(req.params.id);
         if(!proyecto) return res.status(404).json({msg: "Proyecto no encontrado"});
         await proyecto.deleteOne();
-        await Promise.all([proyecto.imagen, ...proyecto.galeria].map(borrar))
+        await Promise.all([proyecto.imagen, proyecto.imagenMovil, ...proyecto.galeria].map(borrar))
         res.json({msg: "Proyecto eliminado"});
     } catch (error) {
         responderError(res, error)

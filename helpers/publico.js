@@ -45,6 +45,7 @@ export const proyectoPublico = (p) => ({
     highlights: p.puntosClave ?? [],
     technologies: lista(p.tecnologias),
     cover: p.imagen?.secure_url || '',
+    mobileCover: p.imagenMovil?.secure_url || '',
     images: (p.galeria ?? []).map(img => img.secure_url).filter(Boolean),
     url: p.link || '',
     github: p.github || '',
