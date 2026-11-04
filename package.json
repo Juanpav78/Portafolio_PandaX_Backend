@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env index.js",
-    "start": "node --env-file-if-exists=.env index.js"
+    "start": "node --env-file-if-exists=.env index.js",
+    "seed": "node --env-file-if-exists=.env seed/seed.js"
   },
   "repository": {
     "type": "git",

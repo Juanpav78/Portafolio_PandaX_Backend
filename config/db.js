@@ -5,7 +5,7 @@ const MAX_INTENTOS = 5
 
 // Una vez conectado, el driver de MongoDB reconecta solo si se cae la red; estos eventos sólo
 // dejan rastro en el log para saber cuándo pasó.
-mongoose.connection.on('disconnected', () => console.log('MongoDB desconectado, reintentando…'))
+mongoose.connection.on('disconnected', () => console.log('MongoDB desconectado'))
 mongoose.connection.on('reconnected', () => console.log('MongoDB reconectado'))
 mongoose.connection.on('error', error => console.log(`MongoDB error: ${error.message}`))
 
