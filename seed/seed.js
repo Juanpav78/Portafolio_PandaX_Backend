@@ -63,8 +63,9 @@ const cargarServicios = async () => {
 }
 
 const cargarVibes = async () => {
-    // Puede que ya exista en el portafolio (creado a mano, sin slug): se busca también por nombre
-    const existente = await Proyecto.findOne({ $or: [{ slug: vibes.slug }, { nombre: /^vibes$/i }] })
+    // Puede que ya exista en el portafolio creado a mano con otro nombre ("Vibes - Plant") y sin
+    // slug: se busca por cualquier nombre que empiece por "Vibes" para no crear un duplicado
+    const existente = await Proyecto.findOne({ $or: [{ slug: vibes.slug }, { nombre: /^vibes\b/i }] })
     if (!existente) {
         await Proyecto.create(vibes)
         return log('Proyecto Vibes creado en code + portafolio')
