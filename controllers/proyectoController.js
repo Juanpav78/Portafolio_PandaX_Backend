@@ -1,51 +1,23 @@
 import Proyecto from "../models/Proyecto.js";
 import { filtroProyectos } from "../helpers/publico.js";
-import { v2 as cloudinary } from 'cloudinary'
-import { cloudinaryConfig } from "../config/env.js";
+import { borrar, comoLista, subir } from "../helpers/cloudinary.js";
+import { leerBooleano, leerLista } from "../helpers/formulario.js";
 
 const MAX_GALERIA = 8
 
 // Campos donde un valor vacío significa "no cambiar" (el formulario no los envía si están en blanco)
 const CAMPOS_TEXTO = ['nombre', 'descripcion', 'link', 'github', 'tipo', 'tecnologias', 'fechaEntrega']
 // Campos opcionales que sí se pueden vaciar: un "" enviado a propósito se guarda
-const CAMPOS_VACIABLES = ['problema', 'solucion', 'descripcionEn', 'problemaEn', 'solucionEn']
-
-// express-fileupload entrega un objeto si llega un solo archivo con ese nombre y un array si
-// llegan varios; se normaliza a array para tratar ambos casos igual.
-const comoLista = archivos => !archivos ? [] : Array.isArray(archivos) ? archivos : [archivos]
-
-let configurado = false
-const configurarCloudinary = () => {
-    if (configurado) return
-    cloudinary.config({ ...cloudinaryConfig(), secure: true });
-    configurado = true
-}
-
-// Sólo se guardan los datos que usa la web. La respuesta completa de Cloudinary trae ~20 campos
-// (etiquetas, firma, versión…) que inflarían cada documento y la respuesta de /proyectos.
-const subir = async archivo => {
-    configurarCloudinary()
-    const { secure_url, public_id, resource_type, width, height } =
-        await cloudinary.uploader.upload(archivo.tempFilePath, { folder: 'images' })
-    return { secure_url, public_id, resource_type, width, height }
-}
-
-// Borrar de Cloudinary nunca debe hacer fallar la petición: si una imagen ya no existe o la API
-// falla, el proyecto se guarda igual y sólo queda un archivo huérfano que se registra en el log.
-const borrar = async imagen => {
-    if (!imagen?.public_id) return
-    configurarCloudinary()
-    try {
-        await cloudinary.uploader.destroy(imagen.public_id, { resource_type: imagen.resource_type ?? 'image' })
-    } catch (error) {
-        console.log('No se pudo borrar de Cloudinary', imagen.public_id, error.message)
-    }
-}
+const CAMPOS_VACIABLES = ['problema', 'solucion', 'descripcionEn', 'problemaEn', 'solucionEn', 'slug', 'subtitulo', 'resumen']
+const CAMPOS_LISTA = ['sitios', 'puntosClave']
 
 const tomarTextos = body => {
     const datos = {}
     CAMPOS_TEXTO.forEach(campo => { if (body[campo]) datos[campo] = body[campo] })
     CAMPOS_VACIABLES.forEach(campo => { if (body[campo] !== undefined) datos[campo] = body[campo] })
+    // El formulario llega como multipart (sólo texto): listas y booleanos vienen serializados
+    CAMPOS_LISTA.forEach(campo => { if (body[campo] !== undefined) datos[campo] = leerLista(body[campo]) })
+    if (body.publicado !== undefined) datos.publicado = leerBooleano(body.publicado)
     return datos
 }
 
@@ -53,6 +25,7 @@ const responderError = (res, error) => {
     if (error.name === 'ValidationError') return res.status(400).json({ msg: Object.values(error.errors)[0].message })
     if (error.name === 'CastError') return res.status(404).json({ msg: 'Proyecto no encontrado' })
     if (error instanceof SyntaxError) return res.status(400).json({ msg: 'Datos de la galería no válidos' })
+    if (error.code === 11000) return res.status(400).json({ msg: 'Ya existe un proyecto con ese slug' })
     console.log(error)
     return res.status(500).json({ msg: error.message?.includes('cloudinary') ? 'No se pudo subir la imagen' : 'Error en el servidor' })
 }
