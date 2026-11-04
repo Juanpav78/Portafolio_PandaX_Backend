@@ -6,9 +6,9 @@ import { leerBooleano, leerLista } from "../helpers/formulario.js";
 const MAX_GALERIA = 8
 
 // Campos donde un valor vacío significa "no cambiar" (el formulario no los envía si están en blanco)
-const CAMPOS_TEXTO = ['nombre', 'descripcion', 'link', 'github', 'tipo', 'tecnologias', 'fechaEntrega']
+const CAMPOS_TEXTO = ['nombre', 'descripcion', 'github', 'tipo', 'tecnologias', 'fechaEntrega']
 // Campos opcionales que sí se pueden vaciar: un "" enviado a propósito se guarda
-const CAMPOS_VACIABLES = ['problema', 'solucion', 'descripcionEn', 'problemaEn', 'solucionEn', 'slug', 'subtitulo', 'resumen']
+const CAMPOS_VACIABLES = ['problema', 'solucion', 'descripcionEn', 'problemaEn', 'solucionEn', 'slug', 'subtitulo', 'resumen', 'link']
 const CAMPOS_LISTA = ['sitios', 'puntosClave']
 
 const tomarTextos = body => {
