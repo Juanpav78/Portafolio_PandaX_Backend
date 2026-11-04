@@ -6,6 +6,7 @@ import proyectoRouter from "./routes/proyectoRoutes.js";
 import planRouter from "./routes/planRoutes.js";
 import contactoRouter from "./routes/contactoRoutes.js";
 import cors from "cors"
+import helmet from "helmet";
 import fileupload from "express-fileupload";
 import { corsOrigins } from "./config/env.js";
 
@@ -14,6 +15,10 @@ const app = express();
 // Render pone un proxy delante de la app: sin esto todas las peticiones parecerían venir de la
 // IP del proxy y el límite de intentos de login bloquearía a todos los visitantes a la vez.
 app.set('trust proxy', 1);
+
+// Cabeceras de seguridad estándar. La API la consumen otros dominios (portafolio y PandaX Code),
+// por eso la política de recursos se abre a cross-origin; el control de acceso real lo hace CORS.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 
 app.use(
