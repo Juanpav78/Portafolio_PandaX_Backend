@@ -24,6 +24,13 @@ const usuarioSchema = mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    // Hoy sólo hay un administrador; el rol queda para poder dar acceso limitado más adelante
+    // (p. ej. un editor que no vea pagos) sin migrar la colección.
+    rol:{
+        type: String,
+        enum: ['admin', 'editor'],
+        default: 'admin',
+    },
 
 },{
     timestamps:true,
