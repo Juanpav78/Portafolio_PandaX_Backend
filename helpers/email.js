@@ -101,16 +101,25 @@ export const confirmarUsuario = ({ email, nombre, token }) => {
     })
 }
 
-// Mensaje del formulario de contacto del portafolio. Llega a tu bandeja con "Responder"
-// apuntando al visitante, así contestas desde tu correo sin copiar direcciones.
-export const mensajeContacto = ({ nombre, email, mensaje }) => enviarCorreo({
-    para: process.env.CONTACTO_EMAIL || remitente().email,
-    asunto: `Nuevo mensaje de ${nombre} desde tu portafolio`,
-    responderA: { email, name: nombre },
-    texto: `${nombre} <${email}> escribió:\n\n${mensaje}`,
-    html: plantilla({
-        titulo: 'Nuevo mensaje desde el portafolio',
-        cuerpo: `<p style="margin:0 0 12px"><strong style="color:#f3f3f7">${escapar(nombre)}</strong> &lt;${escapar(email)}&gt;</p>
-                 <p style="margin:0;white-space:pre-line;color:#f3f3f7">${escapar(mensaje)}</p>`,
-    }),
-})
+// Mensaje del formulario de contacto (portafolio o PandaX Code). Llega a tu bandeja con
+// "Responder" apuntando al visitante, así contestas desde tu correo sin copiar direcciones.
+const NOMBRE_SITIO = { code: 'PandaX Code', portafolio: 'tu portafolio' }
+const ETIQUETAS = { phone: 'Teléfono', company: 'Empresa', service: 'Servicio', budget: 'Presupuesto' }
+
+export const mensajeContacto = ({ nombre, email, mensaje, sitio = 'portafolio', extra = {} }) => {
+    // Sólo los datos opcionales que el visitante sí llenó (teléfono, empresa…)
+    const detalles = Object.entries(ETIQUETAS).filter(([campo]) => extra[campo])
+    const sitioTexto = NOMBRE_SITIO[sitio] ?? sitio
+    return enviarCorreo({
+        para: process.env.CONTACTO_EMAIL || remitente().email,
+        asunto: `Nuevo mensaje de ${nombre} desde ${sitioTexto}`,
+        responderA: { email, name: nombre },
+        texto: `${nombre} <${email}> escribió:\n\n${mensaje}\n\n${detalles.map(([c, e]) => `${e}: ${extra[c]}`).join('\n')}`,
+        html: plantilla({
+            titulo: `Nuevo mensaje desde ${escapar(sitioTexto)}`,
+            cuerpo: `<p style="margin:0 0 12px"><strong style="color:#f3f3f7">${escapar(nombre)}</strong> &lt;${escapar(email)}&gt;</p>
+                     ${detalles.map(([c, e]) => `<p style="margin:0 0 4px">${e}: <span style="color:#f3f3f7">${escapar(extra[c])}</span></p>`).join('')}
+                     <p style="margin:12px 0 0;white-space:pre-line;color:#f3f3f7">${escapar(mensaje)}</p>`,
+        }),
+    })
+}
