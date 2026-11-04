@@ -6,6 +6,7 @@ import proyectoRouter from "./routes/proyectoRoutes.js";
 import planRouter from "./routes/planRoutes.js";
 import contactoRouter from "./routes/contactoRoutes.js";
 import publicRouter from "./routes/publicRoutes.js";
+import adminRouter from "./routes/adminRoutes.js";
 import cors from "cors"
 import helmet from "helmet";
 import fileupload from "express-fileupload";
@@ -76,6 +77,8 @@ app.use('/api/usuarios', usuarioRouter)
 app.use('/api/proyectos', proyectoRouter)
 app.use('/api/planes', planRouter)
 app.use('/api/contacto', contactoRouter)
+// Panel de administración (protegido con JWT salvo el login)
+app.use('/api/admin', adminRouter)
 // Rutas públicas compartidas (PandaX Code y portafolio): /api/services, /api/projects…
 app.use('/api', publicRouter)
 
