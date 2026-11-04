@@ -94,8 +94,10 @@ const contarPorSitio = Model => Promise.all(SITIOS.map(sitio => Model.countDocum
 
 export const resumen = async (req, res) => {
     try {
-        const [nuevos, proyectos, servicios, testimonios, totalProyectos, ultimos] = await Promise.all([
+        const [nuevos, nuevosPorSitio, proyectos, servicios, testimonios, totalProyectos, ultimos] = await Promise.all([
             Message.countDocuments({ estado: 'nuevo' }),
+            Promise.all(SITIOS.map(site => Message.countDocuments({ estado: 'nuevo', site })))
+                .then(conteos => Object.fromEntries(SITIOS.map((sitio, i) => [sitio, conteos[i]]))),
             contarPorSitio(Proyecto),
             contarPorSitio(Service),
             contarPorSitio(Testimonial),
@@ -104,6 +106,7 @@ export const resumen = async (req, res) => {
         ])
         res.json({
             mensajesNuevos: nuevos,
+            mensajesNuevosPorSitio: nuevosPorSitio,
             proyectos: { total: totalProyectos, ...proyectos },
             servicios,
             testimonios,
