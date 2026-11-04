@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { corsOrigins } from '../config/env.js'
 
 // Hay dos formas de enviar, según lo que esté configurado en el .env:
 //  - BREVO_API_KEY → API HTTP de Brevo. Es la que funciona en producción: el plan gratis de
@@ -73,7 +74,7 @@ const plantilla = ({ titulo, cuerpo, textoBoton, url }) => `
   </div>
 </div>`
 
-const urlFrontend = () => process.env.FRONTEND_URL.split(',')[0]
+const urlFrontend = () => corsOrigins()[0]
 
 export const recuperarPassword = ({ email, nombre, token }) => {
     const url = `${urlFrontend()}/recover-password/${token}`

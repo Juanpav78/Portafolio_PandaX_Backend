@@ -7,6 +7,7 @@ import planRouter from "./routes/planRoutes.js";
 import contactoRouter from "./routes/contactoRoutes.js";
 import cors from "cors"
 import fileupload from "express-fileupload";
+import { corsOrigins } from "./config/env.js";
 
 const app = express();
 
@@ -45,11 +46,8 @@ const PORT = process.env.PORT || 4000;
 conectarDB();
 
 //Configuracion del Cors
-// FRONTEND_URL admite varios orígenes separados por coma
-const whiteList = (process.env.FRONTEND_URL || "")
-    .split(",")
-    .map(url => url.trim())
-    .filter(Boolean)
+// CORS_ORIGINS (o FRONTEND_URL) admite varios orígenes separados por coma: admin, portafolio y PandaX Code
+const whiteList = corsOrigins()
 
 const corsOptions = {
 

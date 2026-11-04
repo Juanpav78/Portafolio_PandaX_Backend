@@ -1,5 +1,6 @@
 import Proyecto from "../models/Proyecto.js";
 import { v2 as cloudinary } from 'cloudinary'
+import { cloudinaryConfig } from "../config/env.js";
 
 const MAX_GALERIA = 8
 
@@ -15,12 +16,7 @@ const comoLista = archivos => !archivos ? [] : Array.isArray(archivos) ? archivo
 let configurado = false
 const configurarCloudinary = () => {
     if (configurado) return
-    cloudinary.config({
-        cloud_name: process.env.CLOUD_NAME,
-        api_key: process.env.CLOUD_KEY,
-        api_secret: process.env.CLOUD_SECRET,
-        secure: true
-    });
+    cloudinary.config({ ...cloudinaryConfig(), secure: true });
     configurado = true
 }
 
