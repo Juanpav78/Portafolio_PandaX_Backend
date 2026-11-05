@@ -48,6 +48,7 @@ export const proyectoPublico = (p) => ({
     mobileCover: p.imagenMovil?.secure_url || '',
     images: (p.galeria ?? []).map(img => img.secure_url).filter(Boolean),
     url: p.link || '',
+    internal: Boolean(p.interno),
     github: p.github || '',
     featured: Boolean(p.destacado),
     order: p.orden ?? 0,

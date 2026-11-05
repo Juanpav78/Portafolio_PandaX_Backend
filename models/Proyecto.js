@@ -114,6 +114,12 @@ const proyectoSchema = mongoose.Schema({
     },
     // En qué webs aparece. Los proyectos que ya existían eran del portafolio.
     sitios: campoSitios(['portafolio']),
+    // Aplicación interna o privada (p. ej. una herramienta hecha para una empresa): no tiene
+    // enlace público, y las webs muestran un aviso en lugar del botón "Ver proyecto"
+    interno:{
+        type:Boolean,
+        default:false,
+    },
     // Permite ocultar un proyecto de las webs públicas sin borrarlo
     publicado:{
         type:Boolean,

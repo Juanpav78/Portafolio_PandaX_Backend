@@ -1,29 +1,32 @@
 import mongoose from "mongoose";
 
-export const ESTADOS_COTIZACION = ['borrador', 'enviada', 'aceptada', 'rechazada', 'vencida']
+// "vencida" no se guarda a mano: se deduce al leer (enviada + validUntil ya pasó), así nunca
+// queda una cotización marcada como enviada cuando en realidad expiró.
+export const ESTADOS_COTIZACION = ['borrador', 'enviada', 'aceptada', 'rechazada']
 
 const itemSchema = mongoose.Schema({
-    description: { type: String, required: true, trim: true },
-    quantity: { type: Number, default: 1, min: 0 },
-    unitPrice: { type: Number, default: 0, min: 0 },
+    description: { type: String, required: [true, 'Cada línea necesita una descripción'], trim: true, maxlength: 300 },
+    quantity: { type: Number, default: 1, min: [0.01, 'La cantidad debe ser mayor que 0'] },
+    unitPrice: { type: Number, default: 0, min: [0, 'El precio no puede ser negativo'] },
     // Servicio del catálogo del que salió la línea (opcional: también hay líneas libres)
     service: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
 }, { _id: false });
 
-// Cotización para un cliente. Preparada para la fase de negocio; aún sin rutas.
+// Cotización para un cliente. Sin IVA: el total es la suma de las líneas.
 const quoteSchema = mongoose.Schema({
-    client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
-    title: { type: String, required: true, trim: true },
-    items: { type: [itemSchema], default: [] },
+    // Consecutivo legible (COT-0001). Lo asigna el controlador al crear.
+    numero: { type: Number, unique: true, sparse: true },
+    client: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: [true, 'Elige el cliente'] },
+    title: { type: String, required: [true, 'El título es obligatorio'], trim: true, maxlength: 160 },
+    items: {
+        type: [itemSchema],
+        default: [],
+        validate: { validator: items => items.length > 0, message: 'Agrega al menos una línea' },
+    },
     currency: { type: String, default: 'COP' },
     estado: { type: String, enum: ESTADOS_COTIZACION, default: 'borrador' },
     validUntil: Date,
     notes: { type: String, trim: true, default: '' },
-}, { timestamps: true, toJSON: { virtuals: true } });
-
-// El total se calcula de las líneas en vez de guardarse: así nunca queda desincronizado
-quoteSchema.virtual('total').get(function () {
-    return this.items.reduce((suma, item) => suma + item.quantity * item.unitPrice, 0)
-})
+}, { timestamps: true });
 
 export default mongoose.model("Quote", quoteSchema);

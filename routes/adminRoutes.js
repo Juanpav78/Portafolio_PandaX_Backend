@@ -10,6 +10,11 @@ import {
     listarMensajes, obtenerMensaje, cambiarEstadoMensaje, eliminarMensaje,
     resumen, cambiarPassword, subirImagen,
 } from "../controllers/adminController.js";
+import {
+    listarClientes, detalleCliente, crearCliente, actualizarCliente, eliminarCliente, clienteDesdeMensaje,
+    listarCotizaciones, detalleCotizacion, crearCotizacion, actualizarCotizacion, cambiarEstadoCotizacion, eliminarCotizacion,
+    listarPagos, detallePago, crearPago, actualizarPago, eliminarPago,
+} from "../controllers/negocioController.js";
 
 // Panel de administración. Todo lo que hay aquí, salvo el login, exige sesión. Las rutas
 // antiguas (/api/proyectos, /api/usuarios) siguen funcionando para no romper lo desplegado.
@@ -50,5 +55,33 @@ router.route('/messages/:id')
     .get(obtenerMensaje)
     .delete(eliminarMensaje)
 router.patch('/messages/:id/estado', cambiarEstadoMensaje)
+// Convierte el mensaje en cliente (o devuelve el que ya existe con ese correo)
+router.post('/messages/:mensajeId/cliente', clienteDesdeMensaje)
+
+// ---------- Negocio ----------
+router.route('/clients')
+    .get(listarClientes)
+    .post(crearCliente)
+router.route('/clients/:id')
+    .get(detalleCliente)
+    .put(actualizarCliente)
+    .delete(eliminarCliente)
+
+router.route('/quotes')
+    .get(listarCotizaciones)
+    .post(crearCotizacion)
+router.route('/quotes/:id')
+    .get(detalleCotizacion)
+    .put(actualizarCotizacion)
+    .delete(eliminarCotizacion)
+router.patch('/quotes/:id/estado', cambiarEstadoCotizacion)
+
+router.route('/payments')
+    .get(listarPagos)
+    .post(crearPago)
+router.route('/payments/:id')
+    .get(detallePago)
+    .put(actualizarPago)
+    .delete(eliminarPago)
 
 export default router;

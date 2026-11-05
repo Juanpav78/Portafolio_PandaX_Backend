@@ -18,6 +18,7 @@ const tomarTextos = body => {
     // El formulario llega como multipart (sólo texto): listas y booleanos vienen serializados
     CAMPOS_LISTA.forEach(campo => { if (body[campo] !== undefined) datos[campo] = leerLista(body[campo]) })
     if (body.publicado !== undefined) datos.publicado = leerBooleano(body.publicado)
+    if (body.interno !== undefined) datos.interno = leerBooleano(body.interno)
     return datos
 }
 
