@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Client from "../models/Client.js";
 import Quote from "../models/Quote.js";
 import Payment from "../models/Payment.js";
@@ -145,7 +146,12 @@ const datosCotizacion = body => ({
     ...(body.items !== undefined && { items: limpiarItems(body.items) }),
 })
 
+// Un id mal formado en un filtro (p. ej. "ninguno" mientras no se elige cliente) no es un
+// error: simplemente no hay resultados
+const idInvalido = valor => valor && !mongoose.isValidObjectId(valor)
+
 export const listarCotizaciones = async (req, res) => {
+    if (idInvalido(req.query.client)) return res.json([])
     const filtro = {}
     if (req.query.client) filtro.client = req.query.client
     try {
@@ -251,6 +257,7 @@ const validarRelacion = async ({ client, quote }) => {
 }
 
 export const listarPagos = async (req, res) => {
+    if (idInvalido(req.query.client) || idInvalido(req.query.quote)) return res.json({ pagos: [], recibido: 0 })
     const filtro = {}
     if (req.query.client) filtro.client = req.query.client
     if (req.query.quote) filtro.quote = req.query.quote
