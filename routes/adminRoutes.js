@@ -12,6 +12,7 @@ import {
 } from "../controllers/adminController.js";
 import {
     listarClientes, detalleCliente, crearCliente, actualizarCliente, eliminarCliente, clienteDesdeMensaje,
+    listarCotizaciones, detalleCotizacion, crearCotizacion, actualizarCotizacion, cambiarEstadoCotizacion, eliminarCotizacion,
 } from "../controllers/negocioController.js";
 
 // Panel de administración. Todo lo que hay aquí, salvo el login, exige sesión. Las rutas
@@ -64,5 +65,14 @@ router.route('/clients/:id')
     .get(detalleCliente)
     .put(actualizarCliente)
     .delete(eliminarCliente)
+
+router.route('/quotes')
+    .get(listarCotizaciones)
+    .post(crearCotizacion)
+router.route('/quotes/:id')
+    .get(detalleCotizacion)
+    .put(actualizarCotizacion)
+    .delete(eliminarCotizacion)
+router.patch('/quotes/:id/estado', cambiarEstadoCotizacion)
 
 export default router;

@@ -3,6 +3,7 @@ import Quote from "../models/Quote.js";
 import Payment from "../models/Payment.js";
 import Message from "../models/Message.js";
 import { errorAdmin } from "../helpers/crud.js";
+import { siguienteNumero } from "../models/Contador.js";
 
 // ---------- Utilidades de cálculo ----------
 // El total de una cotización se calcula de sus líneas (no se guarda) para que nunca quede
@@ -55,7 +56,7 @@ export const detalleCliente = async (req, res) => {
         const recibido = pagado(pagos)
         res.json({
             cliente,
-            cotizaciones: cotizaciones.map(q => ({ ...q, total: totalCotizacion(q) })),
+            cotizaciones: cotizaciones.map(q => conTotales(q, pagos)),
             pagos,
             cuenta: { aceptado, pagado: recibido, saldo: Math.max(aceptado - recibido, 0) },
         })
@@ -116,4 +117,99 @@ export const clienteDesdeMensaje = async (req, res) => {
         })
         res.status(201).json({ cliente, existente: false })
     } catch (error) { errorAdmin(res, error, 'Mensaje') }
+}
+
+// ---------- Cotizaciones ----------
+const DIAS_VIGENCIA = 15
+
+// Estado que se muestra: una enviada cuyo plazo ya pasó se presenta como "vencida"
+const estadoVisible = q => q.estado === 'enviada' && q.validUntil && new Date(q.validUntil) < new Date() ? 'vencida' : q.estado
+
+const conTotales = (q, pagos = []) => {
+    const total = totalCotizacion(q)
+    const recibido = pagado(pagos.filter(p => String(p.quote) === String(q._id)))
+    return { ...q, total, pagado: recibido, saldo: Math.max(total - recibido, 0), estadoVisible: estadoVisible(q) }
+}
+
+// Sólo se aceptan los campos esperados de cada línea; números a Number para que "1.200.000"
+// escrito como texto no llegue a la base como string
+const limpiarItems = items => (Array.isArray(items) ? items : []).map(i => ({
+    description: String(i.description ?? '').trim(),
+    quantity: Number(i.quantity ?? 1),
+    unitPrice: Number(i.unitPrice ?? 0),
+    ...(i.service && { service: i.service }),
+}))
+
+const datosCotizacion = body => ({
+    ...tomar(body, ['client', 'title', 'notes', 'validUntil', 'estado']),
+    ...(body.items !== undefined && { items: limpiarItems(body.items) }),
+})
+
+export const listarCotizaciones = async (req, res) => {
+    const filtro = {}
+    if (req.query.client) filtro.client = req.query.client
+    try {
+        const cotizaciones = await Quote.find(filtro).sort({ numero: -1 }).populate('client', 'name company').lean()
+        const pagos = await Payment.find({ quote: { $in: cotizaciones.map(q => q._id) } }, { quote: 1, amount: 1, estado: 1 }).lean()
+        let resultado = cotizaciones.map(q => conTotales(q, pagos))
+        // "vencida" no existe en la base: el filtro por estado se aplica sobre el estado visible
+        if (req.query.estado) resultado = resultado.filter(q => q.estadoVisible === req.query.estado)
+        res.json(resultado)
+    } catch (error) { errorAdmin(res, error, 'Cotización') }
+}
+
+export const detalleCotizacion = async (req, res) => {
+    try {
+        const cotizacion = await Quote.findById(req.params.id).populate('client').lean()
+        if (!cotizacion) return res.status(404).json({ msg: 'Cotización no encontrada' })
+        const pagos = await Payment.find({ quote: cotizacion._id }).sort({ date: -1 }).lean()
+        res.json({ ...conTotales(cotizacion, pagos), pagos })
+    } catch (error) { errorAdmin(res, error, 'Cotización') }
+}
+
+export const crearCotizacion = async (req, res) => {
+    try {
+        if (!(await Client.exists({ _id: req.body.client }))) return res.status(400).json({ msg: 'Elige un cliente válido' })
+        // Se valida antes de pedir número: si fallara después, se gastaría un consecutivo
+        const vence = new Date(Date.now() + DIAS_VIGENCIA * 864e5)
+        const cotizacion = new Quote({ validUntil: vence, ...datosCotizacion(req.body) })
+        await cotizacion.validate()
+        cotizacion.numero = await siguienteNumero('cotizacion', Quote)
+        await cotizacion.save()
+        res.status(201).json(cotizacion)
+    } catch (error) { errorAdmin(res, error, 'Cotización') }
+}
+
+export const actualizarCotizacion = async (req, res) => {
+    try {
+        const cotizacion = await Quote.findById(req.params.id)
+        if (!cotizacion) return res.status(404).json({ msg: 'Cotización no encontrada' })
+        if (req.body.client && !(await Client.exists({ _id: req.body.client }))) return res.status(400).json({ msg: 'Elige un cliente válido' })
+        cotizacion.set(datosCotizacion(req.body))
+        res.json(await cotizacion.save())
+    } catch (error) { errorAdmin(res, error, 'Cotización') }
+}
+
+export const cambiarEstadoCotizacion = async (req, res) => {
+    try {
+        const cotizacion = await Quote.findById(req.params.id)
+        if (!cotizacion) return res.status(404).json({ msg: 'Cotización no encontrada' })
+        cotizacion.estado = req.body.estado
+        // Reenviar una vencida le da un plazo nuevo en vez de dejarla expirada al instante
+        if (req.body.estado === 'enviada' && cotizacion.validUntil && cotizacion.validUntil < new Date()) {
+            cotizacion.validUntil = new Date(Date.now() + DIAS_VIGENCIA * 864e5)
+        }
+        res.json(await cotizacion.save())
+    } catch (error) { errorAdmin(res, error, 'Cotización') }
+}
+
+// Con pagos registrados se conserva: borrarla dejaría pagos apuntando a nada
+export const eliminarCotizacion = async (req, res) => {
+    try {
+        const pagos = await Payment.countDocuments({ quote: req.params.id })
+        if (pagos) return res.status(400).json({ msg: `La cotización tiene ${pagos} pagos registrados. Elimínalos antes o márcala como rechazada.` })
+        const cotizacion = await Quote.findByIdAndDelete(req.params.id)
+        if (!cotizacion) return res.status(404).json({ msg: 'Cotización no encontrada' })
+        res.json({ msg: 'Cotización eliminada' })
+    } catch (error) { errorAdmin(res, error, 'Cotización') }
 }
