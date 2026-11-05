@@ -1,11 +1,14 @@
 import mongoose from "mongoose";
 
-// Cliente de PandaX Code. Preparado para la fase de negocio (cotizaciones y pagos); todavía no
-// tiene rutas ni pantallas.
+// Cliente de PandaX Code. Agrupa sus cotizaciones y pagos (ver controllers/negocioController.js).
 const clientSchema = mongoose.Schema({
-    name: { type: String, required: true, trim: true, maxlength: 120 },
+    name: { type: String, required: [true, 'El nombre es obligatorio'], trim: true, maxlength: 120 },
     company: { type: String, trim: true, default: '' },
-    email: { type: String, trim: true, lowercase: true, default: '' },
+    // Opcional (hay clientes que sólo dan teléfono), pero si se escribe debe ser válido
+    email: {
+        type: String, trim: true, lowercase: true, default: '',
+        validate: { validator: v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), message: 'El correo no es válido' },
+    },
     phone: { type: String, trim: true, default: '' },
     // NIT o cédula, necesario para facturar
     taxId: { type: String, trim: true, default: '' },
