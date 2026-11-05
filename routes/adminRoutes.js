@@ -13,6 +13,7 @@ import {
 import {
     listarClientes, detalleCliente, crearCliente, actualizarCliente, eliminarCliente, clienteDesdeMensaje,
     listarCotizaciones, detalleCotizacion, crearCotizacion, actualizarCotizacion, cambiarEstadoCotizacion, eliminarCotizacion,
+    listarPagos, detallePago, crearPago, actualizarPago, eliminarPago,
 } from "../controllers/negocioController.js";
 
 // Panel de administración. Todo lo que hay aquí, salvo el login, exige sesión. Las rutas
@@ -74,5 +75,13 @@ router.route('/quotes/:id')
     .put(actualizarCotizacion)
     .delete(eliminarCotizacion)
 router.patch('/quotes/:id/estado', cambiarEstadoCotizacion)
+
+router.route('/payments')
+    .get(listarPagos)
+    .post(crearPago)
+router.route('/payments/:id')
+    .get(detallePago)
+    .put(actualizarPago)
+    .delete(eliminarPago)
 
 export default router;

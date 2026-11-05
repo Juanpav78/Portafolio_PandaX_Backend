@@ -213,3 +213,106 @@ export const eliminarCotizacion = async (req, res) => {
         res.json({ msg: 'Cotización eliminada' })
     } catch (error) { errorAdmin(res, error, 'Cotización') }
 }
+
+// ---------- Pagos ----------
+// Colombia no tiene horario de verano: el desfase con UTC es siempre -05:00. Los meses y las
+// fechas se calculan en hora de Bogotá para que un pago del 30 a las 9 p. m. no caiga en el
+// mes siguiente por estar el servidor en UTC.
+const ZONA = '-05:00'
+export const rangoMes = (mes) => {
+    const [anio, numero] = String(mes).split('-').map(Number)
+    const inicio = new Date(`${anio}-${String(numero).padStart(2, '0')}-01T00:00:00${ZONA}`)
+    const siguiente = numero === 12 ? `${anio + 1}-01` : `${anio}-${String(numero + 1).padStart(2, '0')}`
+    return { $gte: inicio, $lt: new Date(`${siguiente}-01T00:00:00${ZONA}`) }
+}
+export const mesActual = () => new Date(Date.now() - 5 * 36e5).toISOString().slice(0, 7)
+
+// El formulario envía "YYYY-MM-DD": se guarda al mediodía de Bogotá para que no cambie de día
+const leerFecha = valor => /^\d{4}-\d{2}-\d{2}$/.test(String(valor)) ? new Date(`${valor}T12:00:00${ZONA}`) : valor
+
+const datosPago = body => {
+    const datos = tomar(body, ['client', 'quote', 'amount', 'method', 'estado', 'notes'])
+    if (body.date !== undefined) datos.date = leerFecha(body.date)
+    if (datos.amount !== undefined) datos.amount = Number(datos.amount)
+    // "" desde el select significa "sin cotización"
+    if (datos.quote === '' || datos.quote === null) datos.quote = undefined
+    return datos
+}
+
+// Un pago ligado a una cotización debe ser del mismo cliente; si no, el saldo de ambos mentiría
+const validarRelacion = async ({ client, quote }) => {
+    if (!client || !(await Client.exists({ _id: client }))) return 'Elige un cliente válido'
+    if (quote) {
+        const cotizacion = await Quote.findById(quote).select('client').lean()
+        if (!cotizacion) return 'La cotización no existe'
+        if (String(cotizacion.client) !== String(client)) return 'La cotización elegida es de otro cliente'
+    }
+    return null
+}
+
+export const listarPagos = async (req, res) => {
+    const filtro = {}
+    if (req.query.client) filtro.client = req.query.client
+    if (req.query.quote) filtro.quote = req.query.quote
+    if (/^\d{4}-\d{2}$/.test(req.query.mes ?? '')) filtro.date = rangoMes(req.query.mes)
+    try {
+        const pagos = await Payment.find(filtro).sort({ date: -1 }).limit(1000)
+            .populate('client', 'name company').populate('quote', 'numero title').lean()
+        res.json({ pagos, recibido: pagado(pagos) })
+    } catch (error) { errorAdmin(res, error, 'Pago') }
+}
+
+export const detallePago = async (req, res) => {
+    try {
+        const pago = await Payment.findById(req.params.id).lean()
+        if (!pago) return res.status(404).json({ msg: 'Pago no encontrado' })
+        res.json(pago)
+    } catch (error) { errorAdmin(res, error, 'Pago') }
+}
+
+export const crearPago = async (req, res) => {
+    const datos = datosPago(req.body)
+    try {
+        const problema = await validarRelacion(datos)
+        if (problema) return res.status(400).json({ msg: problema })
+        res.status(201).json(await Payment.create(datos))
+    } catch (error) { errorAdmin(res, error, 'Pago') }
+}
+
+export const actualizarPago = async (req, res) => {
+    try {
+        const pago = await Payment.findById(req.params.id)
+        if (!pago) return res.status(404).json({ msg: 'Pago no encontrado' })
+        const datos = datosPago(req.body)
+        const problema = await validarRelacion({ client: datos.client ?? pago.client, quote: 'quote' in datos ? datos.quote : pago.quote })
+        if (problema) return res.status(400).json({ msg: problema })
+        pago.set(datos)
+        if ('quote' in datos && !datos.quote) pago.quote = undefined
+        res.json(await pago.save())
+    } catch (error) { errorAdmin(res, error, 'Pago') }
+}
+
+export const eliminarPago = async (req, res) => {
+    try {
+        const pago = await Payment.findByIdAndDelete(req.params.id)
+        if (!pago) return res.status(404).json({ msg: 'Pago no encontrado' })
+        res.json({ msg: 'Pago eliminado' })
+    } catch (error) { errorAdmin(res, error, 'Pago') }
+}
+
+// ---------- Resumen de negocio para el panel ----------
+export const resumenNegocio = async () => {
+    const [pagosMes, aceptadas, enviadas] = await Promise.all([
+        Payment.find({ estado: 'pagado', date: rangoMes(mesActual()) }, { amount: 1, estado: 1 }).lean(),
+        Quote.find({ estado: 'aceptada' }, { items: 1 }).lean(),
+        Quote.find({ estado: 'enviada' }, { validUntil: 1 }).lean(),
+    ])
+    const pagosAceptadas = await Payment.find({ quote: { $in: aceptadas.map(q => q._id) }, estado: 'pagado' }, { quote: 1, amount: 1, estado: 1 }).lean()
+    const porCobrar = aceptadas.reduce((s, q) => s + conTotales(q, pagosAceptadas).saldo, 0)
+    return {
+        ingresosMes: pagado(pagosMes),
+        porCobrar,
+        // Enviadas que siguen vigentes: las que esperan respuesta del cliente
+        cotizacionesPorResponder: enviadas.filter(q => !q.validUntil || new Date(q.validUntil) >= new Date()).length,
+    }
+}

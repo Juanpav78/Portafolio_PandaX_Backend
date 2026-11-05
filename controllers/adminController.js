@@ -6,6 +6,7 @@ import Usuario from "../models/Usuario.js";
 import { crearCrud, errorAdmin, filtroListado } from "../helpers/crud.js";
 import { SITIOS, sitioValido } from "../helpers/sitios.js";
 import { subir } from "../helpers/cloudinary.js";
+import { resumenNegocio } from "./negocioController.js";
 
 export const services = crearCrud(Service, {
     entidad: 'Servicio',
@@ -95,7 +96,7 @@ const contarPorSitio = Model => Promise.all([Model.countDocuments(), ...SITIOS.m
 
 export const resumen = async (req, res) => {
     try {
-        const [nuevos, nuevosPorSitio, proyectos, servicios, testimonios, ultimos] = await Promise.all([
+        const [nuevos, nuevosPorSitio, proyectos, servicios, testimonios, ultimos, negocio] = await Promise.all([
             Message.countDocuments({ estado: 'nuevo' }),
             Promise.all(SITIOS.map(site => Message.countDocuments({ estado: 'nuevo', site })))
                 .then(conteos => Object.fromEntries(SITIOS.map((sitio, i) => [sitio, conteos[i]]))),
@@ -103,6 +104,7 @@ export const resumen = async (req, res) => {
             contarPorSitio(Service),
             contarPorSitio(Testimonial),
             Message.find({ estado: { $ne: 'archivado' } }).sort({ createdAt: -1 }).limit(5).lean(),
+            resumenNegocio(),
         ])
         res.json({
             mensajesNuevos: nuevos,
@@ -111,6 +113,7 @@ export const resumen = async (req, res) => {
             servicios,
             testimonios,
             ultimosMensajes: ultimos,
+            negocio,
         })
     } catch (error) { errorAdmin(res, error) }
 }
