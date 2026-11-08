@@ -3,6 +3,7 @@ import Testimonial from "../models/Testimonial.js";
 import Message, { ESTADOS_MENSAJE } from "../models/Message.js";
 import Proyecto from "../models/Proyecto.js";
 import Usuario from "../models/Usuario.js";
+import Reto from "../models/Reto.js";
 import { crearCrud, errorAdmin, filtroListado } from "../helpers/crud.js";
 import { SITIOS, sitioValido } from "../helpers/sitios.js";
 import { subir } from "../helpers/cloudinary.js";
@@ -32,8 +33,8 @@ export const listarProyectos = async (req, res) => {
     } catch (error) { errorAdmin(res, error, 'Proyecto') }
 }
 
-// Sirve para proyectos, servicios y testimonios: todos tienen `publicado`
-const conPublicado = { projects: Proyecto, services: Service, testimonials: Testimonial }
+// Sirve para proyectos, servicios, testimonios y retos: todos tienen `publicado`
+const conPublicado = { projects: Proyecto, services: Service, testimonials: Testimonial, retos: Reto }
 export const cambiarPublicado = coleccion => async (req, res) => {
     try {
         const doc = await conPublicado[coleccion].findByIdAndUpdate(
