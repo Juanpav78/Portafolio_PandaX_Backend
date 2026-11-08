@@ -2,6 +2,7 @@ import Service from "../models/Service.js";
 import Proyecto from "../models/Proyecto.js";
 import Testimonial from "../models/Testimonial.js";
 import Message from "../models/Message.js";
+import Reto from "../models/Reto.js";
 import { filtroPublico, filtroProyectos, limite, proyectoPublico } from "../helpers/publico.js";
 import { sitioValido } from "../helpers/sitios.js";
 import { mensajeContacto } from "../helpers/email.js";
@@ -51,6 +52,24 @@ export const getTestimonials = async (req, res) => {
         const testimonials = await Testimonial.find(filtroPublico(req.query.site))
             .sort({ createdAt: -1 }).select(OCULTOS).lean()
         res.json(testimonials)
+    } catch (error) { fallo(res, error) }
+}
+
+// Retos para el muro de PandaX Code, del más reciente al más antiguo. La imagen va como URL más
+// su tamaño: el muro reserva el alto de cada tarjeta antes de que cargue y no salta.
+export const getRetos = async (req, res) => {
+    try {
+        const retos = await Reto.find({ publicado: { $ne: false } }).sort({ numero: -1 }).limit(100).lean()
+        res.json(retos.map(r => ({
+            _id: r._id,
+            numero: r.numero,
+            tematica: r.tematica,
+            imagen: r.imagen?.secure_url ?? '',
+            ancho: r.imagen?.width ?? null,
+            alto: r.imagen?.height ?? null,
+            video: r.video,
+            demo: r.demo,
+        })))
     } catch (error) { fallo(res, error) }
 }
 

@@ -15,6 +15,9 @@ import {
     listarCotizaciones, detalleCotizacion, crearCotizacion, actualizarCotizacion, cambiarEstadoCotizacion, eliminarCotizacion,
     listarPagos, detallePago, crearPago, actualizarPago, eliminarPago,
 } from "../controllers/negocioController.js";
+import {
+    listarRetos, obtenerReto, crearReto, actualizarReto, eliminarReto, siguienteReto,
+} from "../controllers/retoController.js";
 
 // Panel de administración. Todo lo que hay aquí, salvo el login, exige sesión. Las rutas
 // antiguas (/api/proyectos, /api/usuarios) siguen funcionando para no romper lo desplegado.
@@ -48,6 +51,18 @@ for (const [ruta, crud] of [['services', services], ['testimonials', testimonial
     router.route(`/${ruta}/:id`).get(crud.obtener).put(crud.actualizar).delete(crud.eliminar)
     router.patch(`/${ruta}/:id/publicado`, cambiarPublicado(ruta))
 }
+
+// Retos (sólo PandaX Code): multipart con la imagen opcional, como los proyectos
+router.route('/retos')
+    .get(listarRetos)
+    .post(crearReto)
+// Antes de '/:id' para que "siguiente" no se tome como id
+router.get('/retos/siguiente', siguienteReto)
+router.route('/retos/:id')
+    .get(obtenerReto)
+    .put(actualizarReto)
+    .delete(eliminarReto)
+router.patch('/retos/:id/publicado', cambiarPublicado('retos'))
 
 // Mensajes: no se crean desde el admin, llegan por el formulario de contacto
 router.get('/messages', listarMensajes)
